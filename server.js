@@ -619,7 +619,7 @@ app.post("/v1/chat/completions", async (req, reply) => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${process.env.TARGET_API_KEY}`
       },
-      body: JSON.stringify({ ...body, messages: llmMessages })
+      body: JSON.stringify({ ...body, messages: llmMessages, model: process.env.MODEL_NAME || body.model })
     });
 
     const upstreamContentType = response.headers.get("content-type") || "";
