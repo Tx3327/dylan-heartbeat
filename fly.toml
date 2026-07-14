@@ -1,0 +1,48 @@
+# Fly.io deployment config for dylan-heartbeat
+# Deploy: fly deploy
+# Secrets: fly secrets set KEY=VALUE
+
+app = 'dylan-heartbeat'
+primary_region = 'hkg'  # 香港，离你近
+
+[build]
+
+[env]
+  PORT = '3000'
+  NODE_ENV = 'production'
+  DIARY_ENABLED = 'true'
+  DIARY_DIR = '/data/diary'
+  PUSH_PROVIDER = 'bark'
+  DAY_WAKE_AFTER_MINUTES = '60'
+  NIGHT_WAKE_AFTER_MINUTES = '120'
+  DAY_CHECK_INTERVAL_MINUTES = '10'
+  NIGHT_CHECK_INTERVAL_MINUTES = '120'
+  WAKE_DAY_START_HOUR = '10'
+  WAKE_DAY_END_HOUR = '24'
+  WEATHER_ENABLED = 'false'
+  TIME_ZONE = 'Asia/Shanghai'
+  ALLOW_PUBLIC_API = 'false'
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = 'connections'
+    hard_limit = 50
+    soft_limit = 25
+
+[[http_service.checks]]
+  grace_period = '5s'
+  interval = '30s'
+  method = 'GET'
+  timeout = '3s'
+  path = '/health'
+
+[[vm]]
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 256
