@@ -330,13 +330,43 @@ function shouldWake(lastUserTime) {
 }
 
 function getLastUserTime(messages) {
+  // 先尝试从时间戳记忆库查找
+  const TIMESTAMP_DB_FILE = path.join(__dirname, "message_timestamps.json");
+  let tsDB = {};
+  try {
+    if (fs.existsSync(TIMESTAMP_DB_FILE)) {
+      tsDB = JSON.parse(fs.readFileSync(TIMESTAMP_DB_FILE, "utf-8"));
+    }
+  } catch {}
+
+  function makeFingerprint(msg) {
+    const content = normalizeContentToText(msg.content).trim().slice(0, 150);
+    return `${msg.role}::${content}`;
+  }
+
+  function makeFingerprintStripped(msg) {
+    let content = normalizeContentToText(msg.content).trim();
+    content = content
+      .replace(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}\s*/, "")
+      .replace(/^\d{4}\/\d{1,2}\/\d{1,2} \d{2}:\d{2}\s*/, "")
+      .replace(/^（\d{4}[-/]\d{1,2}[-/]\d{1,2} \d{2}:\d{2}[）\s]*/, "")
+      .trim()
+      .slice(0, 150);
+    return `${msg.role}::${content}`;
+  }
+
   const reversed = [...messages].reverse();
   for (const msg of reversed) {
-    if (msg.role === "user") {
-      const content = normalizeContentToText(msg.content);
-      const match = content.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2})/);
-      if (match) return new Date(match[1]);
-    }
+    if (msg.role !== "user") continue;
+    const content = normalizeContentToText(msg.content);
+    // 方式1：从消息内容匹配时间戳
+    const match = content.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2})/);
+    if (match) return new Date(match[1]);
+    // 方式2：从时间戳记忆库查找
+    const fp = makeFingerprint(msg);
+    if (tsDB[fp]) return new Date(tsDB[fp]);
+    const fpStripped = makeFingerprintStripped(msg);
+    if (tsDB[fpStripped]) return new Date(tsDB[fpStripped]);
   }
   return null;
 }
