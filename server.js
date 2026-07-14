@@ -1532,6 +1532,22 @@ app.get("/test-bark", async (req, reply) => {
 // ========================
 app.get("/health", async () => ({ status: "ok", uptime: process.uptime() }));
 
+// 调试：查看时间线中的用户消息和时间戳
+app.get("/debug/timeline", async () => {
+  const fs = require("fs-extra");
+  const TIMELINE_FILE = "enhanced_messages.json";
+  if (!fs.existsSync(TIMELINE_FILE)) return { error: "no timeline" };
+  const msgs = fs.readJsonSync(TIMELINE_FILE);
+  const userMsgs = msgs
+    .filter(m => m.role === "user")
+    .map(m => {
+      const content = typeof m.content === "string" ? m.content : JSON.stringify(m.content);
+      const tsMatch = content.match(/（?(\d{4}-\d{2}-\d{2} \d{2}:\d{2})/);
+      return { ts: tsMatch ? tsMatch[1] : "NO_TS", preview: content.substring(0, 100) };
+    });
+  return { total: msgs.length, userMessages: userMsgs };
+});
+
 // ========================
 // 启动服务
 // ========================
