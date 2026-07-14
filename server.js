@@ -610,6 +610,22 @@ app.post("/v1/chat/completions", async (req, reply) => {
       return reply.code(500).send({ error: "TARGET_API_URL / TARGET_API_KEY 未配置" });
     }
 
+    // 注入当前时间，让 AI 知道现在几点
+    const tz = process.env.TIME_ZONE || "Asia/Shanghai";
+    const now = new Date();
+    const currentTime = now.toLocaleString("zh-CN", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+    const dayNames = ["日", "一", "二", "三", "四", "五", "六"];
+    const dayOfWeek = dayNames[now.getDay()];
+    const timeContext = { role: "system", content: `【系统提示】当前时间：${currentTime}，星期${dayOfWeek}。时区：${tz}。` };
+    // 避免重复注入
+    const alreadyHasTime = llmMessages.some(m => m.role === "system" && m.content && m.content.includes("【系统提示】当前时间"));
+    if (!alreadyHasTime) {
+      // 插入到 system 消息之后、用户消息之前
+      const firstUserIdx = llmMessages.findIndex(m => m.role === "user");
+      if (firstUserIdx >= 0) llmMessages.splice(firstUserIdx, 0, timeContext);
+      else llmMessages.unshift(timeContext);
+    }
+
     const requestedStream = body?.stream === true;
 
     // 请求模型
