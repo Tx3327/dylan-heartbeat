@@ -1527,6 +1527,11 @@ app.get("/test-bark", async (req, reply) => {
 });
 
 // ========================
+// 健康检查
+// ========================
+app.get("/health", async () => ({ status: "ok", uptime: process.uptime() }));
+
+// ========================
 // 启动服务
 // ========================
 app.listen({ port: PORT, host: "0.0.0.0" }, (err, address) => {
