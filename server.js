@@ -741,8 +741,9 @@ function basicAuth(req, reply, done) {
 // ========================
 app.get("/admin", { preHandler: basicAuth }, async (req, reply) => {
   const serverUptime = Math.floor(process.uptime());
+  const tz = process.env.TIME_ZONE || "Asia/Shanghai";
   const wakeUpStatus = wakeUpLastHeartbeat
-    ? `在线（上次心跳: ${new Date(wakeUpLastHeartbeat).toLocaleString("zh-CN")}）`
+    ? `在线（上次心跳: ${new Date(wakeUpLastHeartbeat).toLocaleString("zh-CN", { timeZone: tz })}）`
     : "离线或未启动";
 
   const currentUrl = readEnvValue("TARGET_API_URL");
